@@ -12,7 +12,9 @@ import {
   researcher
 } from '@/lib/agents'
 import { createStreamableValue, createStreamableUI } from 'ai/rsc'
-import { CoreMessage, generateId } from 'ai'
+import { CoreMessage, generateId, LanguageModelV1 } from 'ai'
+import { getModel, getModels } from '../utils'
+import { cookies } from 'next/headers'
 
 export async function workflow(
   uiState: {
@@ -22,8 +24,22 @@ export async function workflow(
   },
   aiState: any,
   messages: CoreMessage[],
-  skip: boolean
+  skip: boolean,
+  model?: LanguageModelV1,
+  language?: string
 ) {
+  const cookieStore = cookies()
+  let activeModel = model
+
+  if (model) {
+    cookieStore.set('model', model.modelId)
+  } else {
+    activeModel =
+      getModels().find(m => m.modelId === cookieStore.get('model')?.value) ||
+      getModel()
+  }
+
+  // throw new Error(JSON.stringify(model))
   const { uiStream, isCollapsed, isGenerating } = uiState
   const id = generateId()
 
@@ -32,11 +48,12 @@ export async function workflow(
 
   let action = { object: { next: 'proceed' } }
   // If the user does not skip the task, run the task manager
-  if (!skip) action = (await taskManager(messages)) ?? action
+  if (!skip)
+    action = (await taskManager(messages, activeModel || getModel())) ?? action
 
   if (action.object.next === 'inquire') {
     // Generate inquiry
-    const inquiry = await inquire(uiStream, messages)
+    const inquiry = await inquire(uiStream, messages, activeModel)
     uiStream.done()
     aiState.done({
       ...aiState.get(),
@@ -63,7 +80,7 @@ export async function workflow(
   // Select the appropriate researcher function based on the environment variables
   const { text, toolResults } = useOllama
     ? await researcherWithOllama(uiStream, messages)
-    : await researcher(uiStream, messages)
+    : await researcher(uiStream, messages, activeModel, language)
 
   aiState.update({
     ...aiState.get(),
@@ -94,7 +111,11 @@ export async function workflow(
   ]
 
   // Generate related queries
-  const relatedQueries = await querySuggestor(uiStream, messagesWithAnswer)
+  const relatedQueries = await querySuggestor(
+    uiStream,
+    messagesWithAnswer,
+    activeModel
+  )
   // Add follow-up panel
   uiStream.append(
     <Section title="Follow-up">

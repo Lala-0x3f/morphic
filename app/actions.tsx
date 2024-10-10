@@ -6,7 +6,7 @@ import {
   getAIState,
   getMutableAIState
 } from 'ai/rsc'
-import { CoreMessage, generateId } from 'ai'
+import { CoreMessage, generateId, LanguageModelV1 } from 'ai'
 import { Section } from '@/components/section'
 import { FollowupPanel } from '@/components/followup-panel'
 import { saveChat } from '@/lib/actions/chat'
@@ -20,15 +20,21 @@ import RetrieveSection from '@/components/retrieve-section'
 import { VideoSearchSection } from '@/components/video-search-section'
 import { AnswerSection } from '@/components/answer-section'
 import { workflow } from '@/lib/actions/workflow'
+import { getModels } from '@/lib/utils'
+import { cookies } from 'next/headers'
 
 const MAX_MESSAGES = 6
 
 async function submit(
   formData?: FormData,
   skip?: boolean,
-  retryMessages?: AIMessage[]
+  retryMessages?: AIMessage[],
+  modelid?: string,
+  language: string = '合适的'
 ) {
   'use server'
+
+  const m = modelid || cookies().get('model')?.value
 
   const aiState = getMutableAIState<typeof AI>()
   const uiStream = createStreamableUI()
@@ -62,6 +68,7 @@ async function submit(
     : formData
     ? JSON.stringify(Object.fromEntries(formData))
     : null
+
   const type = skip
     ? undefined
     : formData?.has('input')
@@ -69,6 +76,9 @@ async function submit(
     : formData?.has('related_query')
     ? 'input_related'
     : 'inquiry'
+
+  // 模型切换
+  const model = getModels().find(model => model.modelId === m)
 
   // Add the user message to the state
   if (content) {
@@ -95,7 +105,9 @@ async function submit(
     { uiStream, isCollapsed, isGenerating },
     aiState,
     messages,
-    skip ?? false
+    skip ?? false,
+    model,
+    language
   )
 
   return {

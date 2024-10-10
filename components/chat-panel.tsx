@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, use } from 'react'
 import { useRouter } from 'next/navigation'
 import type { AI, UIState } from '@/app/actions'
 import { useUIState, useActions, useAIState } from 'ai/rsc'
@@ -10,8 +10,18 @@ import { Button } from './ui/button'
 import { ArrowRight, Plus } from 'lucide-react'
 import { EmptyScreen } from './empty-screen'
 import Textarea from 'react-textarea-autosize'
-import { generateId } from 'ai'
+import { generateId, LanguageModelV1 } from 'ai'
 import { useAppState } from '@/lib/utils/app-state'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Spinner } from './ui/spinner'
+import { set } from 'zod'
+import ModelIcon from './model-icon'
 
 interface ChatPanelProps {
   messages: UIState
@@ -28,6 +38,19 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
   const router = useRouter()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isFirstRender = useRef(true) // For development environment
+
+  // models select 添加模型列表，模型选择器等
+  const [modelName, setModelName] = useState('')
+  const [modelList, setModelList] = useState<LanguageModelV1[]>([])
+  // 设置语言
+  const [language, setLanguage] = useState('🇨🇳 中文')
+  const [languageList, setLanguageList] = useState<string[]>([
+    '🇬🇧 英语',
+    '🇨🇳 中文',
+    '🇫🇷 法语',
+    '🇩🇪 德语',
+    '✨ 当地语言'
+  ])
 
   async function handleQuerySubmit(query: string, formData?: FormData) {
     setInput(query)
@@ -47,7 +70,13 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
     if (!formData) {
       data.append('input', query)
     }
-    const responseMessage = await submit(data)
+    const responseMessage = await submit(
+      data,
+      false,
+      undefined,
+      modelName,
+      language
+    )
     setMessages(currentMessages => [...currentMessages, responseMessage])
   }
 
@@ -85,12 +114,46 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
   useEffect(() => {
     // focus on input when the page loads
     inputRef.current?.focus()
+    // setModelList()
+    fetch('/api/models')
+      .then(res => res.json())
+      .then(data => {
+        const ms: LanguageModelV1[] = data
+        setModelList(ms)
+        const m = localStorage.getItem('model')
+        if (m && ms.length > 0) {
+          setModelName(m)
+        } else {
+          setModelName(ms[0].modelId)
+        }
+      })
   }, [])
+
+  const handleModelSwitch = (modelId: string) => {
+    if (
+      modelId &&
+      modelId !== modelName &&
+      modelList.find(model => model.modelId === modelId)
+    ) {
+      setModelName(modelId)
+      localStorage.setItem('model', modelId)
+    }
+  }
+
+  if (modelList.length === 0)
+    return (
+      <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+        <Spinner />
+      </div>
+    )
 
   // If there are messages and the new button has not been pressed, display the new Button
   if (messages.length > 0) {
     return (
       <div className="fixed bottom-2 md:bottom-8 left-0 right-0 flex justify-center items-center mx-auto pointer-events-none">
+        <span className="font-mono text-accent-foreground/50 text-xs">
+          Power by {modelName}
+        </span>
         <Button
           type="button"
           variant={'secondary'}
@@ -117,6 +180,12 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
         'fixed bottom-8 left-0 right-0 top-10 mx-auto h-screen flex flex-col items-center justify-center'
       }
     >
+      <div className="flex pb-8 items-center flex-col">
+        <h1 className="text-6xl font-black">Your Morphic</h1>
+        <span className="font-mono text-accent-foreground/50 text-xs">
+          Power by {modelName}
+        </span>
+      </div>
       <form onSubmit={handleSubmit} className="max-w-2xl w-full px-6">
         <div className="relative flex items-center w-full">
           <Textarea
@@ -179,6 +248,64 @@ export function ChatPanel({ messages, query }: ChatPanelProps) {
           >
             <ArrowRight size={20} />
           </Button>
+        </div>
+        <div className="w-full flex item-center gap-1">
+          <Select
+            onValueChange={v => {
+              handleModelSwitch(v)
+            }}
+            value={modelName}
+          >
+            <SelectTrigger className="w-fit rounded-2xl my-2 h-8">
+              <SelectValue
+                placeholder={modelList[0].modelId.replaceAll('-', ' ')}
+              />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              {modelList.map(model => {
+                return (
+                  <SelectItem
+                    key={model.modelId}
+                    value={model.modelId}
+                    className="rounded-xl "
+                  >
+                    <p className="flex gap-2 items-center">
+                      <ModelIcon name={model.modelId} />
+                      {model.modelId.replaceAll('-', ' ')}
+                    </p>
+                  </SelectItem>
+                )
+              })}
+              {/* <SelectItem value="light" className="rounded-xl">
+              Light
+            </SelectItem>
+            <SelectItem value="dark">Dark</SelectItem>
+            <SelectItem value="system">System</SelectItem> */}
+            </SelectContent>
+          </Select>
+          <Select
+            onValueChange={v => {
+              setLanguage(v)
+            }}
+            value={language}
+          >
+            <SelectTrigger className="w-fit rounded-2xl my-2 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              {languageList.map(language => {
+                return (
+                  <SelectItem
+                    key={language}
+                    value={language}
+                    className="rounded-xl"
+                  >
+                    {language}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
         </div>
         <EmptyScreen
           submitMessage={message => {

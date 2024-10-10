@@ -1,5 +1,5 @@
 import { createStreamableUI, createStreamableValue } from 'ai/rsc'
-import { CoreMessage, generateText, streamText } from 'ai'
+import { CoreMessage, generateText, LanguageModelV1, streamText } from 'ai'
 import { getTools } from './tools'
 import { getModel } from '../utils'
 import { AnswerSection } from '@/components/answer-section'
@@ -11,8 +11,11 @@ Aim to directly address the user's question, augmenting your response with insig
 
 export async function researcher(
   uiStream: ReturnType<typeof createStreamableUI>,
-  messages: CoreMessage[]
+  messages: CoreMessage[],
+  researcherModel?: LanguageModelV1,
+  language: string = 'en'
 ) {
+  // throw new Error(language)
   try {
     let fullResponse = ''
     const streamableText = createStreamableValue<string>()
@@ -20,8 +23,8 @@ export async function researcher(
 
     const currentDate = new Date().toLocaleString()
     const result = await streamText({
-      model: getModel(),
-      system: `${SYSTEM_PROMPT} Current date and time: ${currentDate}`,
+      model: researcherModel || getModel(),
+      system: `${SYSTEM_PROMPT} Current date and time: ${currentDate} , use ${language} as seacrh language`,
       messages: messages,
       tools: getTools({
         uiStream,

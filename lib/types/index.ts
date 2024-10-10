@@ -1,3 +1,4 @@
+import { google } from '@ai-sdk/google';
 export type SearchResults = {
   images: SearchResultImage[]
   results: SearchResultItem[]
@@ -10,10 +11,10 @@ export type SearchResults = {
 export type SearchResultImage =
   | string
   | {
-      url: string
-      description: string
-      number_of_results?: number
-    }
+    url: string
+    description: string
+    number_of_results?: number
+  }
 
 export type ExaSearchResults = {
   results: ExaSearchResultItem[]
@@ -71,15 +72,15 @@ export type AIMessage = {
   id: string
   name?: string
   type?:
-    | 'answer'
-    | 'related'
-    | 'skip'
-    | 'inquiry'
-    | 'input'
-    | 'input_related'
-    | 'tool'
-    | 'followup'
-    | 'end'
+  | 'answer'
+  | 'related'
+  | 'skip'
+  | 'inquiry'
+  | 'input'
+  | 'input_related'
+  | 'tool'
+  | 'followup'
+  | 'end'
 }
 
 export interface SearXNGResult {
@@ -106,4 +107,16 @@ export type SearXNGSearchResults = {
   results: SearchResultItem[]
   number_of_results?: number
   query: string
+}
+
+export type GoogleSearchResults = {
+  kind: string,
+  url: any,
+  queries: any,
+  items: {
+    kind: string,
+    title: string,
+    link: string,
+    snippet: string,
+  }[]
 }

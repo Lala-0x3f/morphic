@@ -10,8 +10,10 @@ import {
   SearchResults,
   SearchResultItem,
   SearXNGResponse,
-  SearXNGResult
+  SearXNGResult,
+  GoogleSearchResults
 } from '@/lib/types'
+import { exit } from 'process'
 
 export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
   tool({
@@ -33,6 +35,8 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
           includeDomains={include_domains}
         />
       )
+
+      const enhanceSearch = Boolean(process.env.USE_ENHANCED_SEARCH) || false
 
       // Tavily API requires a minimum of 5 characters in the query
       const filledQuery =
@@ -74,17 +78,69 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
           }
           searchResult = await response.json()
         } else {
-          searchResult = await (searchAPI === 'tavily'
-            ? tavilySearch
-            : searchAPI === 'exa'
-            ? exaSearch
-            : searxngSearch)(
-            filledQuery,
-            max_results,
-            effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
-            include_domains,
-            exclude_domains
-          )
+          if (enhanceSearch) {
+            // DEBUGER
+            console.table('Enhancing search results...')
+            //
+
+            const r: SearchResults[] = (await Promise.race([
+              Promise.all([
+                (searchAPI === 'tavily'
+                  ? tavilySearch
+                  : searchAPI === 'exa'
+                  ? exaSearch
+                  : searxngSearch)(
+                  filledQuery,
+                  max_results,
+                  effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+                  include_domains,
+                  exclude_domains
+                ),
+                googleSearch(
+                  filledQuery,
+                  max_results,
+                  effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+                  include_domains,
+                  exclude_domains
+                )
+              ]),
+              new Promise((_, reject) =>
+                setTimeout(() => {
+                  // DEBUGER
+                  console.table('Time out'),
+                    //
+                    reject(new Error('Time out!'))
+                }, 10000)
+              )
+            ])) as SearchResults[]
+            searchResult = r[0]
+            searchResult.results.concat(r[1].results)
+            // searchResult = await googleSearch(
+            //   filledQuery,
+            //   max_results,
+            //   effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+            //   include_domains,
+            //   exclude_domains
+            // )
+
+            // DEBUGER
+            console.table('success')
+            console.table(searchResult)
+            // exit(1) //直接打断
+            //
+          } else {
+            searchResult = await (searchAPI === 'tavily'
+              ? tavilySearch
+              : searchAPI === 'exa'
+              ? exaSearch
+              : searxngSearch)(
+              filledQuery,
+              max_results,
+              effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+              include_domains,
+              exclude_domains
+            )
+          }
         }
       } catch (error) {
         console.error('Search API error:', error)
@@ -276,6 +332,73 @@ async function searxngSearch(
     }
   } catch (error) {
     console.error('SearXNG API error:', error)
+    throw error
+  }
+}
+
+async function googleSearch(
+  query: string,
+  maxResults: number = 10,
+  searchDepth: string,
+  includeDomains: string[] = [],
+  excludeDomains: string[] = []
+): Promise<SearchResults> {
+  const apiKey = process.env.CUSTOM_SEARCH_API_KEY
+  const id = process.env.CUSTOM_SEARCH_ID
+
+  if (!apiKey || !id) {
+    throw new Error(
+      'CUSTOM_SEARCH_API_KEY or CUSTOM_SEARCH_ID is not set in the environment variables'
+    )
+  }
+
+  try {
+    const url = new URL('https://www.googleapis.com/customsearch/v1')
+    url.searchParams.append('q', query)
+    url.searchParams.append('key', apiKey)
+    url.searchParams.append('cx', id)
+    url.searchParams.append('num', maxResults.toString())
+
+    if (searchDepth === 'advanced') {
+      url.searchParams.append('safe', 'off')
+    } else {
+      url.searchParams.append('dateRestrict', '1y')
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json'
+      }
+    })
+
+    //DEBUGER
+    console.table({ url: url.toString() })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Google Search API error (${response.status}):`, errorText)
+      throw new Error(
+        `Google Search API error: ${response.status} ${response.statusText} - ${errorText}`
+      )
+    }
+
+    //DEBUGER
+    console.table('ok /search.tsx:373')
+
+    const data: GoogleSearchResults = await response.json()
+
+    return {
+      results: data.items.map(item => ({
+        title: item.title,
+        url: item.link,
+        content: item.snippet
+      })),
+      images: [],
+      query
+    }
+  } catch (error) {
+    console.error('Google Search API error:', error)
     throw error
   }
 }
