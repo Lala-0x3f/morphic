@@ -2,6 +2,9 @@ import { notFound, redirect } from 'next/navigation'
 import { Chat } from '@/components/chat'
 import { getChat } from '@/lib/actions/chat'
 import { AI } from '@/app/actions'
+import { Card, CardContent } from '@/components/ui/card'
+import { useUser } from '@clerk/nextjs'
+import { auth, currentUser } from '@clerk/nextjs/server'
 
 export const maxDuration = 60
 
@@ -19,14 +22,15 @@ export async function generateMetadata({ params }: SearchPageProps) {
 }
 
 export default async function SearchPage({ params }: SearchPageProps) {
-  const userId = 'anonymous'
-  const chat = await getChat(params.id, userId)
+  const { userId } = auth()
+
+  const chat = await getChat(params.id)
 
   if (!chat) {
     redirect('/')
   }
 
-  if (chat?.userId !== userId) {
+  if (![userId, 'anonymous'].includes(chat?.userId)) {
     notFound()
   }
 
@@ -37,6 +41,9 @@ export default async function SearchPage({ params }: SearchPageProps) {
         messages: chat.messages
       }}
     >
+      {/* {userId}
+      &&
+      {chat.userId} */}
       <Chat id={params.id} />
     </AI>
   )

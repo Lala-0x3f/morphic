@@ -68,7 +68,9 @@ export const CollapsibleMessage: React.FC<CollapsibleMessageProps> = ({
           </Button>
         </div>
       </CollapsibleTrigger>
-      <CollapsibleContent>{message.component}</CollapsibleContent>
+      <CollapsibleContent className="data-[state=open]:animate-slide-down data-[state=close]:animate-slide-up ">
+        <div className="overflow-y-clip max-h-full">{message.component}</div>
+      </CollapsibleContent>
       {!open && <Separator className="my-2 bg-muted" />}
     </Collapsible>
   )

@@ -28,16 +28,16 @@ export async function workflow(
   model?: LanguageModelV1,
   language?: string
 ) {
-  const cookieStore = cookies()
+  // const cookieStore = cookies()
   let activeModel = model
 
-  if (model) {
-    cookieStore.set('model', model.modelId)
-  } else {
-    activeModel =
-      getModels().find(m => m.modelId === cookieStore.get('model')?.value) ||
-      getModel()
-  }
+  // if (model) {
+  //   cookieStore.set('model', model.modelId)
+  // } else {
+  //   activeModel =
+  //     getModels().find(m => m.modelId === cookieStore.get('model')?.value) ||
+  //     getModel()
+  // }
 
   // throw new Error(JSON.stringify(model))
   const { uiStream, isCollapsed, isGenerating } = uiState
@@ -48,8 +48,9 @@ export async function workflow(
 
   let action = { object: { next: 'proceed' } }
   // If the user does not skip the task, run the task manager
-  if (!skip)
+  if (!skip) {
     action = (await taskManager(messages, activeModel || getModel())) ?? action
+  }
 
   if (action.object.next === 'inquire') {
     // Generate inquiry

@@ -7,6 +7,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { CodeBlock } from './ui/codeblock'
+import { motion } from 'framer-motion'
 
 export function BotMessage({ content }: { content: string }) {
   // Check if the content contains LaTeX patterns
@@ -70,6 +71,23 @@ export function BotMessage({ content }: { content: string }) {
         }
       }}
     >
+      {/* {
+        content.split('').map((t, index) => {
+          if (index === content.length - 1) {
+            return (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1 }}
+              >
+                {t}
+              </motion.span>
+            )
+          }
+          return t
+        }) as unknown as string
+      } */}
       {content}
     </MemoizedReactMarkdown>
   )

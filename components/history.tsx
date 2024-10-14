@@ -49,7 +49,7 @@ export function History({ location, children }: HistoryProps) {
           {location === 'header' ? <Menu /> : <ChevronLeft size={16} />}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-64 rounded-tl-xl rounded-bl-xl">
+      <SheetContent className="w-64 rounded-tl-xl rounded-bl-xl ">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-1 text-sm font-normal mb-2">
             <HistoryIcon size={14} />

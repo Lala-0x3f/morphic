@@ -36,7 +36,8 @@ export function VideoSearchResults({ results }: VideoSearchResultsProps) {
 
   // filter out the videos that path is not /watch
   const videos = results.videos.filter((video: SerperSearchResultItem) => {
-    return new URL(video.link).pathname === '/watch'
+    const pathname = new URL(video.link).pathname
+    return pathname.startsWith('/watch') || pathname.startsWith('/video')
   })
 
   // Update the current and count state when the carousel api is available
@@ -129,20 +130,33 @@ export function VideoSearchResults({ results }: VideoSearchResultsProps) {
               >
                 <CarouselContent>
                   {videos.map((video, idx) => {
-                    const videoId = video.link.split('v=')[1]
+                    const videoId = video.link.split('v=')[1] || video.link
                     return (
                       <CarouselItem key={idx}>
                         <div className="p-1 flex items-center justify-center h-full">
-                          <iframe
-                            ref={el => {
-                              videoRefs.current[idx] = el
-                            }}
-                            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
-                            className="w-full aspect-video"
-                            title={video.title}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                          />
+                          {new URL(video.link).hostname ===
+                          'www.youtube.com' ? (
+                            <iframe
+                              ref={el => {
+                                videoRefs.current[idx] = el
+                              }}
+                              src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1`}
+                              className="w-full aspect-video"
+                              title={video.title}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <iframe
+                              ref={el => {
+                                videoRefs.current[idx] = el
+                              }}
+                              src={video.link}
+                              className="w-full aspect-video"
+                              title={video.title}
+                              allowFullScreen
+                            />
+                          )}
                         </div>
                       </CarouselItem>
                     )

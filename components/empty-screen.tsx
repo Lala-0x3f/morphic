@@ -3,16 +3,16 @@ import { ArrowRight } from 'lucide-react'
 
 const exampleMessages = [
   {
-    heading: 'What is OpenAI o1?',
-    message: 'What is OpenAI o1?'
+    heading: '迈凯伦最近发布了什么？',
+    message: '迈凯伦 W1 介绍'
   },
   {
-    heading: 'Why is Nvidia growing rapidly?',
-    message: 'Why is Nvidia growing rapidly?'
+    heading: 'Javascript 怎么获取鼠标坐标',
+    message: 'Javascript 怎么获取鼠标坐标？'
   },
   {
-    heading: 'How does the Vercel AI SDK work?',
-    message: 'How does the Vercel AI SDK work?'
+    heading: '鲁迅和周树人',
+    message: '"鲁迅大战周树人"是什么梗'
   },
   {
     heading: 'Tesla vs Rivian',

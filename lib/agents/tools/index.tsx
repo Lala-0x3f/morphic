@@ -1,7 +1,9 @@
 import { createStreamableUI } from 'ai/rsc'
 import { retrieveTool } from './retrieve'
 import { searchTool } from './search'
-import { videoSearchTool } from './video-search'
+import { YoutubeSearchTool } from './youtube-search'
+import { midjourneyTool } from './midjourney'
+import { BilibiliSearchTool } from './bilibili-search'
 
 export interface ToolProps {
   uiStream: ReturnType<typeof createStreamableUI>
@@ -20,12 +22,30 @@ export const getTools = ({ uiStream, fullResponse }: ToolProps) => {
     })
   }
 
-  if (process.env.SERPER_API_KEY) {
-    tools.videoSearch = videoSearchTool({
+  if (
+    process.env.SERVER_ID &&
+    process.env.CHANNEL_ID &&
+    process.env.SALAI_TOKEN
+  ) {
+    tools.imageGenerate = midjourneyTool({
       uiStream,
       fullResponse
     })
   }
+
+  if (process.env.SERPER_API_KEY) {
+    tools.videoSearch = YoutubeSearchTool({
+      uiStream,
+      fullResponse
+    })
+  } else {
+    tools.videoSearch = BilibiliSearchTool({
+      uiStream,
+      fullResponse
+    })
+  }
+
+  // console.log('tools', tools)
 
   return tools
 }

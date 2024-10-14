@@ -16,6 +16,7 @@ import { shareChat } from '@/lib/actions/chat'
 import { toast } from 'sonner'
 import { useCopyToClipboard } from '@/lib/hooks/use-copy-to-clipboard'
 import { Spinner } from './ui/spinner'
+import { useUser } from '@clerk/nextjs'
 
 interface ChatShareProps {
   chatId: string
@@ -27,12 +28,13 @@ export function ChatShare({ chatId, className }: ChatShareProps) {
   const [pending, startTransition] = useTransition()
   const { copyToClipboard } = useCopyToClipboard({ timeout: 1000 })
   const [shareUrl, setShareUrl] = useState('')
+  const { user } = useUser()
 
   const handleShare = async () => {
     startTransition(() => {
       setOpen(true)
     })
-    const result = await shareChat(chatId)
+    const result = await shareChat(chatId, user?.id || undefined)
     if (!result) {
       toast.error('Failed to share chat')
       return

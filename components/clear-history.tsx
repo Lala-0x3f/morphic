@@ -17,6 +17,8 @@ import { clearChats } from '@/lib/actions/chat'
 import { toast } from 'sonner'
 import { Spinner } from './ui/spinner'
 
+import { useUser } from '@clerk/nextjs'
+
 type ClearHistoryProps = {
   empty: boolean
 }
@@ -24,6 +26,9 @@ type ClearHistoryProps = {
 export function ClearHistory({ empty }: ClearHistoryProps) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const { isLoaded, isSignedIn, user } = useUser()
+
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
@@ -46,7 +51,7 @@ export function ClearHistory({ empty }: ClearHistoryProps) {
             onClick={event => {
               event.preventDefault()
               startTransition(async () => {
-                const result = await clearChats()
+                const result = await clearChats(user?.id)
                 if (result?.error) {
                   toast.error(result.error)
                 } else {

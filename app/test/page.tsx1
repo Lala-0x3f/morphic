@@ -1,0 +1,44 @@
+import { Input } from '@/components/ui/input'
+
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+const Text = () => {
+  'use client'
+  const [text, setText] = useState('')
+  return (
+    <main className="mx-auto pt-20 space-y-4 w-96">
+      <form>
+        <Input
+          value={text}
+          onInput={e => setText((e.target as HTMLInputElement).value)}
+          className="w-full"
+        />
+      </form>
+      <motion.div
+      // initial={{ opacity: 0 }}
+      // animate={{ opacity: 1 }}
+      // transition={{ duration: 0.5 }}
+      // key={text}
+      >
+        {text.split('').map((t, index) => {
+          if (index === text.length - 1) {
+            return (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1 }}
+              >
+                {t}
+              </motion.span>
+            )
+          }
+          console.table({ t, index })
+          return t
+        })}
+      </motion.div>
+    </main>
+  )
+}
+
+export default Text

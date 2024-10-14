@@ -8,6 +8,17 @@ import Footer from '@/components/footer'
 import { Sidebar } from '@/components/sidebar'
 import { Toaster } from '@/components/ui/sonner'
 import { AppStateProvider } from '@/lib/utils/app-state'
+import { zhCN } from '@clerk/localizations'
+
+import { auth } from '@clerk/nextjs/server'
+
+import {
+  ClerkProvider,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton
+} from '@clerk/nextjs'
 
 const fontSans = FontSans({
   subsets: ['latin'],
@@ -19,7 +30,7 @@ const description =
   'A fully open-source AI-powered answer engine with a generative UI.'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://morphic.sh'),
+  // metadataBase: new URL('https://morphic.sh'),
   title,
   description,
   openGraph: {
@@ -47,23 +58,25 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn('font-sans antialiased', fontSans.variable)}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AppStateProvider>
-            <Header />
-            {children}
-            <Sidebar />
-            <Footer />
-            <Toaster />
-          </AppStateProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider localization={zhCN}>
+      <html suppressHydrationWarning>
+        <body className={cn('font-sans antialiased', fontSans.variable)}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AppStateProvider>
+              <Header />
+              {children}
+              <Sidebar />
+              <Footer />
+              <Toaster />
+            </AppStateProvider>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

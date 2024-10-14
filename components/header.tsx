@@ -3,6 +3,14 @@ import { ModeToggle } from './mode-toggle'
 import { IconLogo } from './ui/icons'
 import { cn } from '@/lib/utils'
 import HistoryContainer from './history-container'
+import {
+  SignedOut,
+  SignInButton,
+  SignedIn,
+  UserButton,
+  OrganizationSwitcher
+} from '@clerk/nextjs'
+import { Button } from './ui/button'
 
 export const Header: React.FC = async () => {
   return (
@@ -14,6 +22,17 @@ export const Header: React.FC = async () => {
         </a>
       </div>
       <div className="flex gap-0.5">
+        <SignedOut>
+          <Button asChild variant="ghost" className="rounded-3xl">
+            <SignInButton />
+          </Button>
+        </SignedOut>
+        <SignedIn>
+          <Button variant="ghost" size="default" className="rounded-3xl">
+            {/* <UserButton /> */}
+            <OrganizationSwitcher />
+          </Button>
+        </SignedIn>
         <ModeToggle />
         <HistoryContainer location="header" />
       </div>

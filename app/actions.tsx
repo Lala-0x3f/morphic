@@ -21,7 +21,9 @@ import { VideoSearchSection } from '@/components/video-search-section'
 import { AnswerSection } from '@/components/answer-section'
 import { workflow } from '@/lib/actions/workflow'
 import { getModels } from '@/lib/utils'
-import { cookies } from 'next/headers'
+import MidjourneySection from '@/components/mj'
+import { auth } from '@clerk/nextjs/server'
+// import { cookies } from 'next/headers'
 
 const MAX_MESSAGES = 6
 
@@ -33,8 +35,6 @@ async function submit(
   language: string = '合适的'
 ) {
   'use server'
-
-  const m = modelid || cookies().get('model')?.value
 
   const aiState = getMutableAIState<typeof AI>()
   const uiStream = createStreamableUI()
@@ -68,7 +68,6 @@ async function submit(
     : formData
     ? JSON.stringify(Object.fromEntries(formData))
     : null
-
   const type = skip
     ? undefined
     : formData?.has('input')
@@ -78,7 +77,16 @@ async function submit(
     : 'inquiry'
 
   // 模型切换
-  const model = getModels().find(model => model.modelId === m)
+
+  // const m = modelid || cookies().get('model')?.value
+  // const model = getModels().find(model => model.modelId === m)
+
+  const model = getModels().find(model => model.modelId === modelid)
+  //DEBUGER
+  console.table(content)
+  console.table({ skip: skip })
+  // throw new Error(m)
+  //
 
   // Add the user message to the state
   if (content) {
@@ -164,9 +172,10 @@ export const AI = createAI<AIState, UIState>({
       return
     }
 
+    const { userId } = auth()
+
     const { chatId, messages } = state
     const createdAt = new Date()
-    const userId = 'anonymous'
     const path = `/search/${chatId}`
     const title =
       messages.length > 0
@@ -187,12 +196,12 @@ export const AI = createAI<AIState, UIState>({
     const chat: Chat = {
       id: chatId,
       createdAt,
-      userId,
+      userId: userId || 'anonymous',
       path,
       title,
       messages: updatedMessages
     }
-    await saveChat(chat)
+    await saveChat(chat, userId || 'anonymous')
   }
 })
 
@@ -204,7 +213,6 @@ export const getUIStateFromAIState = (aiState: Chat) => {
   const messages = Array.isArray(aiState.messages)
     ? aiState.messages.map(msg => ({ ...msg }))
     : []
-
   return messages
     .map((message, index) => {
       const { role, content, id, type, name } = message
@@ -293,6 +301,14 @@ export const getUIStateFromAIState = (aiState: Chat) => {
                   id,
                   component: (
                     <VideoSearchSection result={searchResults.value} />
+                  ),
+                  isCollapsed: isCollapsed.value
+                }
+              case 'imageGenerate':
+                return {
+                  id,
+                  component: (
+                    <MidjourneySection message={toolOutput} pending={false} />
                   ),
                   isCollapsed: isCollapsed.value
                 }

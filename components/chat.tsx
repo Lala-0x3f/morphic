@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { ChatPanel } from './chat-panel'
 import { ChatMessages } from './chat-messages'
 import { useUIState } from 'ai/rsc'
+import { useUser } from '@clerk/nextjs'
 
 type ChatProps = {
   id?: string
@@ -14,6 +15,7 @@ type ChatProps = {
 export function Chat({ id, query }: ChatProps) {
   const path = usePathname()
   const [messages] = useUIState()
+  const { isLoaded, isSignedIn, user } = useUser()
 
   useEffect(() => {
     if (!path.includes('search') && messages.length === 1) {

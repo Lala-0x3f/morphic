@@ -26,6 +26,17 @@ export function getModel(useSubModel = false) {
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY
   const groqApiKey = process.env.GROQ_API_KEY
   const groqApiModel = process.env.GROQ_API_MODEL
+  const deepSeekKey = process.env.DEEPSEEK_API_KEY
+  const deepSeekApiBase =
+    process.env.DEEPSEEK_API_BASE || 'https://api.deepseek.com'
+
+  if (deepSeekKey) {
+    const deepSeek = createOpenAI({
+      baseURL: deepSeekApiBase,
+      apiKey: deepSeekKey
+    })
+    return deepSeek.chat('deepseek-chat')
+  }
 
   // if (
   //   !(ollamaBaseUrl && ollamaModel) &&
@@ -101,6 +112,21 @@ export function getModels(useSubModel = false) {
   const anthropicApiKey = process.env.ANTHROPIC_A1PI_KEY
   const groqApiKey = process.env.GROQ_API_KEY
   const groqApiModel = process.env.GROQ_API_MODEL
+  const deepSeekKey = process.env.DEEPSEEK_API_KEY
+  const otherApi = process.env.OTHER_API_URL
+  const otherApiKey = process.env.OTHER_API_KEY
+  const otherApiModels = process.env.OTHER_API_MODEL?.split(',') || []
+  const deepSeekApiBase =
+    process.env.DEEPSEEK_API_BASE || 'https://api.deepseek.com'
+
+  if (deepSeekKey) {
+    const deepSeek = createOpenAI({
+      baseURL: deepSeekApiBase,
+      apiKey: deepSeekKey
+    })
+    models.push(deepSeek.chat('deepseek-chat'))
+  }
+
   if (ollamaBaseUrl && ollamaModel) {
     const ollama = createOllama({ baseURL: ollamaBaseUrl })
     if (useSubModel && ollamaSubModel) {
@@ -108,7 +134,7 @@ export function getModels(useSubModel = false) {
     }
   }
   if (googleApiKey) {
-    models.push(google("gemini-1.5-pro-latest"))
+    models.push(google('gemini-1.5-pro-latest'))
   }
 
   if (anthropicApiKey) {
@@ -142,6 +168,16 @@ export function getModels(useSubModel = false) {
     models.push(openai.chat(openaiApiModel))
   }
 
+  if (otherApi && otherApiKey) {
+    for (const model of otherApiModels) {
+      const other = createOpenAI({
+        baseURL: otherApi,
+        apiKey: otherApiKey
+      })
+      models.push(other.chat(model))
+    }
+  }
+
   if (models.length === 0) {
     throw new Error(
       'Missing environment variables for Ollama, OpenAI, Azure OpenAI, Google or Anthropic'
@@ -161,11 +197,11 @@ export function transformToolMessages(messages: CoreMessage[]): CoreMessage[] {
   return messages.map(message =>
     message.role === 'tool'
       ? {
-        ...message,
-        role: 'assistant',
-        content: JSON.stringify(message.content),
-        type: 'tool'
-      }
+          ...message,
+          role: 'assistant',
+          content: JSON.stringify(message.content),
+          type: 'tool'
+        }
       : message
   ) as CoreMessage[]
 }

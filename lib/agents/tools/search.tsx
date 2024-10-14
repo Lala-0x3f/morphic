@@ -26,6 +26,7 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
       include_domains,
       exclude_domains
     }) => {
+      console.log('🔍 Searching the web for information...')
       let hasError = false
       // Append the search section
       const streamResults = createStreamableValue<string>()
@@ -43,7 +44,8 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
         query.length < 5 ? query + ' '.repeat(5 - query.length) : query
       let searchResult: SearchResults
       const searchAPI =
-        (process.env.SEARCH_API as 'tavily' | 'exa' | 'searxng') || 'tavily'
+        (process.env.SEARCH_API as 'tavily' | 'exa' | 'searxng' | 'google') ||
+        'tavily'
 
       const effectiveSearchDepth =
         searchAPI === 'searxng' &&
@@ -83,36 +85,27 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
             console.table('Enhancing search results...')
             //
 
-            const r: SearchResults[] = (await Promise.race([
-              Promise.all([
-                (searchAPI === 'tavily'
-                  ? tavilySearch
-                  : searchAPI === 'exa'
-                  ? exaSearch
-                  : searxngSearch)(
-                  filledQuery,
-                  max_results,
-                  effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
-                  include_domains,
-                  exclude_domains
-                ),
-                googleSearch(
-                  filledQuery,
-                  max_results,
-                  effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
-                  include_domains,
-                  exclude_domains
-                )
-              ]),
-              new Promise((_, reject) =>
-                setTimeout(() => {
-                  // DEBUGER
-                  console.table('Time out'),
-                    //
-                    reject(new Error('Time out!'))
-                }, 10000)
+            const r: SearchResults[] = await Promise.all([
+              (searchAPI === 'tavily'
+                ? tavilySearch
+                : searchAPI === 'exa'
+                ? exaSearch
+                : searxngSearch)(
+                filledQuery,
+                max_results,
+                effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+                include_domains,
+                exclude_domains
+              ),
+              googleSearch(
+                filledQuery,
+                max_results,
+                effectiveSearchDepth === 'advanced' ? 'advanced' : 'basic',
+                include_domains,
+                exclude_domains
               )
-            ])) as SearchResults[]
+            ])
+
             searchResult = r[0]
             searchResult.results.concat(r[1].results)
             // searchResult = await googleSearch(
@@ -124,8 +117,8 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
             // )
 
             // DEBUGER
-            console.table('success')
-            console.table(searchResult)
+            // console.table('success')
+            // console.table(searchResult)
             // exit(1) //直接打断
             //
           } else {
@@ -133,6 +126,8 @@ export const searchTool = ({ uiStream, fullResponse }: ToolProps) =>
               ? tavilySearch
               : searchAPI === 'exa'
               ? exaSearch
+              : searchAPI === 'google'
+              ? googleSearch
               : searxngSearch)(
               filledQuery,
               max_results,
@@ -339,7 +334,7 @@ async function searxngSearch(
 async function googleSearch(
   query: string,
   maxResults: number = 10,
-  searchDepth: string,
+  searchDepth: 'basic' | 'advanced' = 'basic',
   includeDomains: string[] = [],
   excludeDomains: string[] = []
 ): Promise<SearchResults> {
@@ -365,31 +360,39 @@ async function googleSearch(
       url.searchParams.append('dateRestrict', '1y')
     }
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json'
-      }
-    })
-
-    //DEBUGER
     console.table({ url: url.toString() })
+    let response: Response
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`Google Search API error (${response.status}):`, errorText)
-      throw new Error(
-        `Google Search API error: ${response.status} ${response.statusText} - ${errorText}`
-      )
+    try {
+      response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      })
+    } catch (error) {
+      console.error('Google Search API fetch error:', error)
+      throw error
     }
 
     //DEBUGER
-    console.table('ok /search.tsx:373')
+    // console.table({ url: url.toString() })
 
-    const data: GoogleSearchResults = await response.json()
+    //DEBUGER
+    // console.table('ok /search.tsx:373')
+    let data: GoogleSearchResults
+    try {
+      // console.table(await response.json())
+      data = await response.json()
+    } catch (error) {
+      console.error('Google Search Data error:', error)
+      throw error
+    }
+
+    const items = JSON.parse(JSON.stringify(data.items))
 
     return {
-      results: data.items.map(item => ({
+      results: items.map((item: { title: any; link: any; snippet: any }) => ({
         title: item.title,
         url: item.link,
         content: item.snippet
@@ -402,3 +405,5 @@ async function googleSearch(
     throw error
   }
 }
+
+export { tavilySearch, googleSearch }

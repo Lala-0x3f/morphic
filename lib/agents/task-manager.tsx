@@ -31,6 +31,7 @@ export async function taskManager(
       // 做出明智的选择，确保您有效地完成网络研究员的使命，为用户提供最有价值的帮助。
       // `,
       messages,
+      schemaName: 'nextAction',
       schema: nextActionSchema
     })
 

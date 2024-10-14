@@ -1,6 +1,7 @@
 import { Chat } from '@/components/chat'
 import { generateId } from 'ai'
 import { AI } from './actions'
+import { useUser } from '@clerk/nextjs'
 
 export const maxDuration = 60
 

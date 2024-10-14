@@ -1,4 +1,4 @@
-import { BotMessageSquareIcon } from 'lucide-react'
+import { BotMessageSquareIcon, FishIcon } from 'lucide-react'
 import { SiAnthropic, SiGoogle, SiMeta, SiOpenai } from 'react-icons/si'
 
 const ModelIcon = ({ name }: { name: string }) => {
@@ -19,8 +19,10 @@ const ModelIcon = ({ name }: { name: string }) => {
       return <SiMeta />
     case 'llama':
       return <SiMeta />
+    case 'deepseek':
+      return <FishIcon size={16} />
     default:
-      return <BotMessageSquareIcon />
+      return <BotMessageSquareIcon size={16} />
   }
 }
 

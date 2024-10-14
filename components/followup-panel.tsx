@@ -103,6 +103,7 @@ export function FollowupPanel() {
           type="text"
           name="input"
           placeholder="Ask a follow-up question..."
+          autoComplete="off"
           value={input}
           className="pr-14 h-12 rounded-3xl"
           onChange={e => setInput(e.target.value)}
